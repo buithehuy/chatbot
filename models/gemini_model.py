@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from models.base import Model as BaseModel
-from messages import Message
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
@@ -14,27 +15,35 @@ class GeminiModel(BaseModel):
         self.model_name = "gemini-2.5-flash"
 
     def convert_messages(self, messages):
-        content = []
+        contents = []
+        system_prompt = None
         for msg in messages:
             role = msg.role
+
+            if role == "system":
+                system_prompt = msg.content
+                continue
         
             if role == "assistant":
                 role = "model"
 
-            content.append({
+            contents.append({
                 "role": role,
                 "parts": [
                     {"text": msg.content}
                 ]
             })
-        return content
+        return contents, system_prompt
 
 
     def chat(self, messages):
-        messages = self.convert_messages(messages)
+        contents, system_prompt= self.convert_messages(messages)
         response = self.client.models.generate_content(
             model=self.model_name,
-            contents=messages
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt
+            )
         )
         answer = response.text
         return answer

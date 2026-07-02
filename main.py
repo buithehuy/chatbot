@@ -5,8 +5,8 @@ from models.gemini_model import GeminiModel
 openaimodel = OpenAIModel()
 geminimodel = GeminiModel()
 
-# model = geminimodel
-model = openaimodel
+model = geminimodel
+# model = openaimodel
 
 bot = ChatBot(model)
 
