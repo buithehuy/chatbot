@@ -1,11 +1,12 @@
-from openai_model import OpenAIModel
+from models.openai_model import OpenAIModel
 from chatbot import ChatBot
-from gemini_model import GeminiModel
+from models.gemini_model import GeminiModel
 
 openaimodel = OpenAIModel()
 geminimodel = GeminiModel()
 
-model = geminimodel
+# model = geminimodel
+model = openaimodel
 
 bot = ChatBot(model)
 
