@@ -1,19 +1,17 @@
-import os
-from dotenv import load_dotenv
 from google import genai
 from models.base import Model as BaseModel
 from google import genai
 from google.genai import types
 from responses import ChatResponse
 
-load_dotenv()
+from config import Settings
 
 
 
 class GeminiModel(BaseModel):
     def __init__(self):
         self.client = genai.Client()
-        self.model_name = "gemini-2.5-flash"
+        self.model_name = Settings.GEMINI_MODEL_NAME
 
     def convert_messages(self, messages):
         contents = []

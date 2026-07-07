@@ -1,11 +1,12 @@
 from messages import Message, AssistantMessage
 from tools.tool_executor import ToolExecutor
+from config import Settings
 
 class ChatBot:
     def __init__(self, model, tool_executor=None):
         self.model = model
         self.tool_executor = tool_executor
-        self.system_prompt = "Your name is Bob"
+        self.system_prompt = Settings.SYSTEM_PROMPT
         self.history =[]
 
         if tool_executor:

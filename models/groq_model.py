@@ -1,17 +1,20 @@
-import os
+
 import json
-from dotenv import load_dotenv
+
 from models.base import Model as BaseModel
 from groq import Groq
 from responses import ChatResponse, ToolCall
 
-load_dotenv()
+from config import Settings
+
+
+
 client = Groq()
 
 class GroqModel(BaseModel):
     def __init__(self):
         self.client = client
-        self.model_name = "llama-3.3-70b-versatile"
+        self.model_name = Settings.GROQ_MODEL_NAME
         self.tools = []
         self._pending_tool_calls = None
 

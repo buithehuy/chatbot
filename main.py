@@ -5,6 +5,10 @@ from models.groq_model import GroqModel
 from tools.tool_executor import ToolExecutor
 from tools.tool_registry import ToolRegistry
 from tools.calculator import CalculatorTool
+from tools.weather import Weather
+from config import Settings
+
+api_key = Settings.OPENWEATHER_API_KEY
 
 openaimodel = OpenAIModel()
 geminimodel = GeminiModel()
@@ -12,6 +16,8 @@ groqmodel = GroqModel()
 
 registry = ToolRegistry()
 registry.register(CalculatorTool())
+registry.register(Weather(api_key))
+
 executor = ToolExecutor(registry)
 
 # model = geminimodel
