@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 from models.base import Model as BaseModel
+from responses import ChatResponse
 
 load_dotenv()
 
@@ -11,14 +12,18 @@ class OpenAIModel(BaseModel):
         self.client = OpenAI()
 
     def convert_messages(self, messages):
-        content = []
+        contents = []
+        system_prompt = None
         for msg in messages:
             role = msg.role
-            content.append({
+            if role == "system":
+                system_prompt = msg.content
+                continue
+            contents.append({
                 "role": role,
                 "content": msg.content
             })
-        return content
+        return contents, system_prompt
 
     def chat(self, messages):
         messages = self.convert_messages(messages)
@@ -27,5 +32,6 @@ class OpenAIModel(BaseModel):
             input=messages
         )
         
-        answer = response.output_text
-        return answer
+        return ChatResponse(
+            content= response.output_text
+        )

@@ -4,6 +4,7 @@ from google import genai
 from models.base import Model as BaseModel
 from google import genai
 from google.genai import types
+from responses import ChatResponse
 
 load_dotenv()
 
@@ -45,6 +46,8 @@ class GeminiModel(BaseModel):
                 system_instruction=system_prompt
             )
         )
-        answer = response.text
-        return answer
+        
+        return ChatResponse(
+            content=response.text
+        )
     
