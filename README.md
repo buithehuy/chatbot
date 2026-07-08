@@ -145,7 +145,7 @@ At query time:
 ### 1. Clone & install dependencies
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/buithehuy/chatbot
 cd chatbot
 
 python -m venv .venv
