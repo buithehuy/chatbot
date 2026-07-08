@@ -1,22 +1,20 @@
-
 import json
 
+from groq import BadRequestError
 from models.base import Model as BaseModel
 from groq import Groq
 from responses import ChatResponse, ToolCall
-
 from config import Settings
 
 
-
 client = Groq()
+
 
 class GroqModel(BaseModel):
     def __init__(self):
         self.client = client
         self.model_name = Settings.GROQ_MODEL_NAME
         self.tools = []
-        self._pending_tool_calls = None
 
     def set_tools(self, tools):
         self.tools = tools
@@ -47,33 +45,36 @@ class GroqModel(BaseModel):
                 })
                 continue
 
-            contents.append({
-                "role": role,
-                "content": msg.content
-            })
-        return contents, system_prompt
-    
-    def chat(self, messages):
-        contents, system_prompt = self.convert_messages(messages)
+            contents.append({"role": role, "content": msg.content})
 
+        return contents, system_prompt
+
+    def _call_api(self, contents, system_prompt, use_tools: bool = True) -> ChatResponse:
+        """Gọi Groq API. Nếu use_tools=False, bỏ qua tools để tránh tool_use_failed."""
         if system_prompt:
-            contents.insert(0, {"role": "system", "content": system_prompt})
+            contents = [{"role": "system", "content": system_prompt}] + contents
 
         request_kwargs = {
             "messages": contents,
             "model": self.model_name,
         }
 
-        if self.tools:
+        if use_tools and self.tools:
             request_kwargs["tools"] = [tool.to_schema() for tool in self.tools]
             request_kwargs["tool_choice"] = "auto"
 
         response = self.client.chat.completions.create(**request_kwargs)
-        
         message = response.choices[0].message
+
         if message.tool_calls:
-            tool_call = message.tool_calls[0]
-            # Serialize raw tool_calls để lưu vào history đúng format Groq yêu cầu
+            tool_calls = [
+                ToolCall(
+                    name=tc.function.name,
+                    arguments=json.loads(tc.function.arguments),
+                    tool_call_id=tc.id
+                )
+                for tc in message.tool_calls
+            ]
             raw_tool_calls = [
                 {
                     "id": tc.id,
@@ -86,12 +87,26 @@ class GroqModel(BaseModel):
                 for tc in message.tool_calls
             ]
             return ChatResponse(
-                tool_call=ToolCall(
-                    name=tool_call.function.name,
-                    arguments=json.loads(tool_call.function.arguments),
-                    tool_call_id=tool_call.id
-                ),
+                tool_call=tool_calls[0],
+                tool_calls=tool_calls,
                 raw_tool_calls=raw_tool_calls
             )
-        
+
         return ChatResponse(content=message.content)
+
+    def chat(self, messages) -> ChatResponse:
+        contents, system_prompt = self.convert_messages(messages)
+
+        try:
+            return self._call_api(contents, system_prompt, use_tools=True)
+
+        except BadRequestError as e:
+            error_body = e.body if hasattr(e, "body") else {}
+            code = error_body.get("error", {}).get("code", "")
+
+            if code == "tool_use_failed":
+                # Model sinh tool call JSON bị lỗi → retry không dùng tools
+                print(f"\033[91m⚠ tool_use_failed — retrying without tools...\033[0m")
+                return self._call_api(contents, system_prompt, use_tools=False)
+
+            raise  # lỗi khác thì vẫn raise

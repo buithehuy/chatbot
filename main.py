@@ -6,6 +6,7 @@ from tools.tool_executor import ToolExecutor
 from tools.tool_registry import ToolRegistry
 from tools.calculator import CalculatorTool
 from tools.weather import Weather
+from tools.knowledge_base import KnowledgeBase
 from config import Settings
 
 from rag.embedder import Embedder
@@ -13,6 +14,7 @@ from rag.vector_store import VectorStore
 from rag.retriever import Retriever
 
 api_key = Settings.OPENWEATHER_API_KEY
+
 
 openaimodel = OpenAIModel()
 geminimodel = GeminiModel()
@@ -22,19 +24,22 @@ registry = ToolRegistry()
 registry.register(CalculatorTool())
 registry.register(Weather(api_key))
 
+
 executor = ToolExecutor(registry)
 
 embedder = Embedder()
 vector_store = VectorStore(db_path="./chroma_db")
-retriever = Retriever(embedder, vector_store, chunk_size=100, overlap=50)
+retriever = Retriever(embedder, vector_store, chunk_size=500, overlap=100)
 retriever.index_file("knowledge.txt")
+
+registry.register(KnowledgeBase(retriever))
 
 # model = geminimodel
 # model = openaimodel
 model = groqmodel
 
 
-bot = ChatBot(model, tool_executor=executor, retriever=retriever)
+bot = ChatBot(model, tool_executor=executor)
 
 while True:
     user_input = input("You: ")
